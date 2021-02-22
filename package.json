@@ -1,0 +1,44 @@
+{
+  "name": "projects.js.api-gateway-policy-caching",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "clear:dist": "rm -rf ./dist",
+    "clear:serverless": "rm -rf ./.serverless",
+    "lint": "eslint \"./**/*.{ts,js}\"",
+    "prebuild": "npm run clear:dist && npm run clear:serverless",
+    "build": "tsc",
+    "deploy:beta": "npm run build && sls deploy --config ./deployment/serverless.beta.yml && npm run clear:serverless",
+    "domain:beta": "sls create_domain --config=./deployment/serverless.beta.yml"
+  },
+  "engines": {
+    "node": ">=12"
+  },
+  "dependencies": {
+    "eslint-import-resolver-webpack": "^0.13.0",
+    "serverless-domain-manager": "^4.2.0"
+  },
+  "devDependencies": {
+    "eslint": "^7.5.0",
+    "eslint-config-airbnb-base": "^14.2.0",
+    "eslint-config-prettier": "^6.11.0",
+    "eslint-plugin-import": "^2.22.0",
+    "eslint-plugin-prettier": "^3.1.4",
+    "express": "^4.17.1",
+    "husky": "^4.2.5",
+    "lint-staged": "^10.2.11",
+    "nodemon": "^2.0.4",
+    "prettier": "^2.0.5",
+    "serverless": "^2.21.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aaronsisler/projects.js.api-gateway-policy-caching.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/aaronsisler/projects.js.api-gateway-policy-caching/issues"
+  },
+  "homepage": "https://github.com/aaronsisler/projects.js.api-gateway-policy-caching#readme"
+}
