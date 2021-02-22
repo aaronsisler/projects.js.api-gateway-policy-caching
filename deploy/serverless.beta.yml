@@ -1,0 +1,55 @@
+service: api-gateway-policy-caching
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  stage: beta
+  region: us-east-1
+  iam:
+    role: arn:aws:iam::654918520080:role/APIG-LAMBDA-DDB
+  apiGateway:
+    shouldStartNameWithService: true
+  usagePlan:
+    quota:
+      limit: 500
+      offset: 0
+      period: MONTH
+    throttle:
+      burstLimit: 20
+      rateLimit: 10
+  environment:
+    NODE_ENV: BETA
+
+functions:
+  authorizer:
+    handler: dist/handlers/authorizer-handler/index.handler
+    description: Lambda that checks token passed in Authorization header
+  health:
+    handler: dist/handlers/health-handler/index.handler
+    description: Gateway health check. Responds with current time and a short message.
+    events:
+      - http:
+          path: /health
+          method: get
+  auth:
+    handler: dist/handlers/magic-handler/index.handler
+    description: Retrieve user with OAuth token. Responds with health information.
+    events:
+      - http:
+          path: /magic
+          method: get
+          authorizer:
+            name: authorizer
+            resultTtlInSeconds: 0
+            identitySource: method.request.header.Authorization
+            type: token
+
+plugins:
+  - serverless-domain-manager
+
+custom:
+  customDomain:
+    domainName: auth.otterandcow.com
+    basePath: "beta"
+    stage: beta
+    createRoute53Record: true
