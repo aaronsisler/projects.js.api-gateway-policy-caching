@@ -15,6 +15,9 @@ const magic: APIGatewayProxyHandler = (
   _context: Context,
   callback: Callback<APIGatewayProxyResult>
 ) => {
+  console.log("Event: " + new Date().toTimeString());
+  console.log(_event);
+  console.log(_event.requestContext.authorizer.principalId);
   const healthStatus: Health = new HealthService().getHealth();
   const response: HandlerResponse = responseBodyBuilder({
     statusCode: 200,

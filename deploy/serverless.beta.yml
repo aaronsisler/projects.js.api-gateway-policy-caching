@@ -31,18 +31,18 @@ functions:
       - http:
           path: /health
           method: get
-  auth:
+  magic-token:
     handler: dist/handlers/magic-handler/index.handler
     description: Retrieve user with OAuth token. Responds with health information.
     events:
       - http:
-          path: /magic
+          path: /magic-token
           method: get
           authorizer:
             name: authorizer
-            resultTtlInSeconds: 0
-            identitySource: method.request.header.Authorization
-            type: token
+            resultTtlInSeconds: 3600
+            # identitySource: method.request.header.Authorization
+            type: request
 
 plugins:
   - serverless-domain-manager

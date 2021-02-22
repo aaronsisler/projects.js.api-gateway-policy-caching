@@ -19,8 +19,11 @@ const authorizer = async (
   let principalId: string;
 
   try {
+    console.log("Event: " + new Date().toTimeString());
+    console.log(event);
+    console.log(event.headers);
     const authService = new AuthService();
-    principalId = await authService.getAuthId(event.authorizationToken);
+    principalId = await authService.getAuthId(event.headers["Authorization"]);
   } catch (error) {
     errorLogger("Handler/Authorizer", error);
     callback("Unauthorized");

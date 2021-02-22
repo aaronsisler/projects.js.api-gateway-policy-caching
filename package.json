@@ -16,6 +16,7 @@
     "aws-sdk": "^2.720.0",
     "axios": "^0.21.1",
     "eslint-import-resolver-webpack": "^0.13.0",
+    "serverless-api-gateway-caching": "^1.6.1",
     "serverless-domain-manager": "^4.2.0"
   },
   "devDependencies": {
