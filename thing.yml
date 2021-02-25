@@ -1,0 +1,329 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: The AWS CloudFormation template for this Serverless application
+Resources:
+  ServerlessDeploymentBucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+  ServerlessDeploymentBucketPolicy:
+    Type: "AWS::S3::BucketPolicy"
+    Properties:
+      Bucket: !Ref ServerlessDeploymentBucket
+      PolicyDocument:
+        Statement:
+          - Action: "s3:*"
+            Effect: Deny
+            Principal: "*"
+            Resource:
+              - !Join
+                - ""
+                - - "arn:"
+                  - !Ref "AWS::Partition"
+                  - ":s3:::"
+                  - !Ref ServerlessDeploymentBucket
+                  - /*
+              - !Join
+                - ""
+                - - "arn:"
+                  - !Ref "AWS::Partition"
+                  - ":s3:::"
+                  - !Ref ServerlessDeploymentBucket
+            Condition:
+              Bool:
+                "aws:SecureTransport": false
+  AuthorizerLogGroup:
+    Type: "AWS::Logs::LogGroup"
+    Properties:
+      LogGroupName: /aws/lambda/api-gateway-policy-caching-beta-authorizer
+  HealthLogGroup:
+    Type: "AWS::Logs::LogGroup"
+    Properties:
+      LogGroupName: /aws/lambda/api-gateway-policy-caching-beta-health
+  MagicDashtokenLogGroup:
+    Type: "AWS::Logs::LogGroup"
+    Properties:
+      LogGroupName: /aws/lambda/api-gateway-policy-caching-beta-magic-token
+  AuthorizerLambdaFunction:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Code:
+        S3Bucket: !Ref ServerlessDeploymentBucket
+        S3Key: >-
+          serverless/api-gateway-policy-caching/beta/1613966051209-2021-02-22T03:54:11.209Z/api-gateway-policy-caching.zip
+      Handler: dist/handlers/authorizer-handler/index.handler
+      Runtime: nodejs12.x
+      FunctionName: api-gateway-policy-caching-beta-authorizer
+      MemorySize: 1024
+      Timeout: 6
+      Description: Lambda that checks token passed in Authorization header
+      Environment:
+        Variables:
+          NODE_ENV: BETA
+      Role: "arn:aws:iam::654918520080:role/APIG-LAMBDA-DDB"
+    DependsOn:
+      - AuthorizerLogGroup
+  HealthLambdaFunction:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Code:
+        S3Bucket: !Ref ServerlessDeploymentBucket
+        S3Key: >-
+          serverless/api-gateway-policy-caching/beta/1613966051209-2021-02-22T03:54:11.209Z/api-gateway-policy-caching.zip
+      Handler: dist/handlers/health-handler/index.handler
+      Runtime: nodejs12.x
+      FunctionName: api-gateway-policy-caching-beta-health
+      MemorySize: 1024
+      Timeout: 6
+      Description: Gateway health check. Responds with current time and a short message.
+      Environment:
+        Variables:
+          NODE_ENV: BETA
+      Role: "arn:aws:iam::654918520080:role/APIG-LAMBDA-DDB"
+    DependsOn:
+      - HealthLogGroup
+  MagicDashtokenLambdaFunction:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Code:
+        S3Bucket: !Ref ServerlessDeploymentBucket
+        S3Key: >-
+          serverless/api-gateway-policy-caching/beta/1613966051209-2021-02-22T03:54:11.209Z/api-gateway-policy-caching.zip
+      Handler: dist/handlers/magic-handler/index.handler
+      Runtime: nodejs12.x
+      FunctionName: api-gateway-policy-caching-beta-magic-token
+      MemorySize: 1024
+      Timeout: 6
+      Description: Retrieve user with OAuth token. Responds with health information.
+      Environment:
+        Variables:
+          NODE_ENV: BETA
+      Role: "arn:aws:iam::654918520080:role/APIG-LAMBDA-DDB"
+    DependsOn:
+      - MagicDashtokenLogGroup
+  AuthorizerLambdaVersionLB8ij2TRhSdbSReltqNezJ8eYTLzWGAzmRkRRvE4:
+    Type: "AWS::Lambda::Version"
+    DeletionPolicy: Retain
+    Properties:
+      FunctionName: !Ref AuthorizerLambdaFunction
+      CodeSha256: JgoD+WcFru+rlADfluJQONHc5l7G3OkJ4gt7ROEpCmw=
+      Description: Lambda that checks token passed in Authorization header
+  HealthLambdaVersionxO2wGS3M6yQBJ4avMwGf8N3gEOTxuHZY54OZYAL7N8:
+    Type: "AWS::Lambda::Version"
+    DeletionPolicy: Retain
+    Properties:
+      FunctionName: !Ref HealthLambdaFunction
+      CodeSha256: JgoD+WcFru+rlADfluJQONHc5l7G3OkJ4gt7ROEpCmw=
+      Description: Gateway health check. Responds with current time and a short message.
+  MagicDashtokenLambdaVersione0n7xFGERY4Ybp7rUdixIgabyqz3oFGigsLVa6JK3Ns:
+    Type: "AWS::Lambda::Version"
+    DeletionPolicy: Retain
+    Properties:
+      FunctionName: !Ref MagicDashtokenLambdaFunction
+      CodeSha256: JgoD+WcFru+rlADfluJQONHc5l7G3OkJ4gt7ROEpCmw=
+      Description: Retrieve user with OAuth token. Responds with health information.
+  ApiGatewayRestApi:
+    Type: "AWS::ApiGateway::RestApi"
+    Properties:
+      Name: api-gateway-policy-caching-beta
+      EndpointConfiguration:
+        Types:
+          - EDGE
+      Policy: ""
+  ApiGatewayResourceHealth:
+    Type: "AWS::ApiGateway::Resource"
+    Properties:
+      ParentId: !GetAtt
+        - ApiGatewayRestApi
+        - RootResourceId
+      PathPart: health
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayResourceMagicDashtoken:
+    Type: "AWS::ApiGateway::Resource"
+    Properties:
+      ParentId: !GetAtt
+        - ApiGatewayRestApi
+        - RootResourceId
+      PathPart: magic-token
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodHealthGet:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      HttpMethod: GET
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceHealth
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Join
+          - ""
+          - - "arn:"
+            - !Ref "AWS::Partition"
+            - ":apigateway:"
+            - !Ref "AWS::Region"
+            - ":lambda:path/2015-03-31/functions/"
+            - !GetAtt
+              - HealthLambdaFunction
+              - Arn
+            - /invocations
+      MethodResponses: []
+  ApiGatewayMethodMagicDashtokenGet:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      HttpMethod: GET
+      RequestParameters: {}
+      ResourceId: !Ref ApiGatewayResourceMagicDashtoken
+      RestApiId: !Ref ApiGatewayRestApi
+      ApiKeyRequired: false
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref AuthorizerApiGatewayAuthorizer
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Join
+          - ""
+          - - "arn:"
+            - !Ref "AWS::Partition"
+            - ":apigateway:"
+            - !Ref "AWS::Region"
+            - ":lambda:path/2015-03-31/functions/"
+            - !GetAtt
+              - MagicDashtokenLambdaFunction
+              - Arn
+            - /invocations
+      MethodResponses: []
+    DependsOn: AuthorizerApiGatewayAuthorizer
+  AuthorizerApiGatewayAuthorizer:
+    Type: "AWS::ApiGateway::Authorizer"
+    Properties:
+      AuthorizerResultTtlInSeconds: 3600
+      IdentitySource: method.request.header.Authorization
+      Name: authorizer
+      RestApiId: !Ref ApiGatewayRestApi
+      AuthorizerUri: !Join
+        - ""
+        - - "arn:"
+          - !Ref "AWS::Partition"
+          - ":apigateway:"
+          - !Ref "AWS::Region"
+          - ":lambda:path/2015-03-31/functions/"
+          - !GetAtt
+            - AuthorizerLambdaFunction
+            - Arn
+          - /invocations
+      Type: REQUEST
+  ApiGatewayDeployment1613966041494:
+    Type: "AWS::ApiGateway::Deployment"
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      StageName: beta
+    DependsOn:
+      - ApiGatewayMethodHealthGet
+      - ApiGatewayMethodMagicDashtokenGet
+  ApiGatewayUsagePlan:
+    Type: "AWS::ApiGateway::UsagePlan"
+    DependsOn: ApiGatewayDeployment1613966041494
+    Properties:
+      ApiStages:
+        - ApiId: !Ref ApiGatewayRestApi
+          Stage: beta
+      Description: Usage plan for api-gateway-policy-caching beta stage
+      UsagePlanName: api-gateway-policy-caching-beta
+      Quota:
+        Limit: 500
+        Offset: 0
+        Period: MONTH
+      Throttle:
+        BurstLimit: 20
+        RateLimit: 10
+  HealthLambdaPermissionApiGateway:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      FunctionName: !GetAtt
+        - HealthLambdaFunction
+        - Arn
+      Action: "lambda:InvokeFunction"
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join
+        - ""
+        - - "arn:"
+          - !Ref "AWS::Partition"
+          - ":execute-api:"
+          - !Ref "AWS::Region"
+          - ":"
+          - !Ref "AWS::AccountId"
+          - ":"
+          - !Ref ApiGatewayRestApi
+          - /*/*
+  MagicDashtokenLambdaPermissionApiGateway:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      FunctionName: !GetAtt
+        - MagicDashtokenLambdaFunction
+        - Arn
+      Action: "lambda:InvokeFunction"
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join
+        - ""
+        - - "arn:"
+          - !Ref "AWS::Partition"
+          - ":execute-api:"
+          - !Ref "AWS::Region"
+          - ":"
+          - !Ref "AWS::AccountId"
+          - ":"
+          - !Ref ApiGatewayRestApi
+          - /*/*
+  AuthorizerLambdaPermissionApiGateway:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      FunctionName: !GetAtt
+        - AuthorizerLambdaFunction
+        - Arn
+      Action: "lambda:InvokeFunction"
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join
+        - ""
+        - - "arn:"
+          - !Ref "AWS::Partition"
+          - ":execute-api:"
+          - !Ref "AWS::Region"
+          - ":"
+          - !Ref "AWS::AccountId"
+          - ":"
+          - !Ref ApiGatewayRestApi
+          - /*/*
+Outputs:
+  ServerlessDeploymentBucketName:
+    Value: !Ref ServerlessDeploymentBucket
+  AuthorizerLambdaFunctionQualifiedArn:
+    Description: Current Lambda function version
+    Value: !Ref AuthorizerLambdaVersionLB8ij2TRhSdbSReltqNezJ8eYTLzWGAzmRkRRvE4
+  HealthLambdaFunctionQualifiedArn:
+    Description: Current Lambda function version
+    Value: !Ref HealthLambdaVersionxO2wGS3M6yQBJ4avMwGf8N3gEOTxuHZY54OZYAL7N8
+  MagicDashtokenLambdaFunctionQualifiedArn:
+    Description: Current Lambda function version
+    Value: !Ref MagicDashtokenLambdaVersione0n7xFGERY4Ybp7rUdixIgabyqz3oFGigsLVa6JK3Ns
+  ServiceEndpoint:
+    Description: URL of the service endpoint
+    Value: !Join
+      - ""
+      - - "https://"
+        - !Ref ApiGatewayRestApi
+        - .execute-api.
+        - !Ref "AWS::Region"
+        - .
+        - !Ref "AWS::URLSuffix"
+        - /beta
+  DistributionDomainName:
+    Value: d-xj227edyv2.execute-api.us-east-1.amazonaws.com
+  DomainName:
+    Value: auth.otterandcow.com
+  HostedZoneId:
+    Value: Z1UJRXOUMOOFQ8
