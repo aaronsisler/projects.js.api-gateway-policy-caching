@@ -52,7 +52,7 @@ Resources:
       Code:
         S3Bucket: !Ref ServerlessDeploymentBucket
         S3Key: >-
-          serverless/api-gateway-policy-caching/beta/1613966051209-2021-02-22T03:54:11.209Z/api-gateway-policy-caching.zip
+          serverless/api-gateway-policy-caching/beta/1614220541423-2021-02-25T02:35:41.423Z/api-gateway-policy-caching.zip
       Handler: dist/handlers/authorizer-handler/index.handler
       Runtime: nodejs12.x
       FunctionName: api-gateway-policy-caching-beta-authorizer
@@ -71,7 +71,7 @@ Resources:
       Code:
         S3Bucket: !Ref ServerlessDeploymentBucket
         S3Key: >-
-          serverless/api-gateway-policy-caching/beta/1613966051209-2021-02-22T03:54:11.209Z/api-gateway-policy-caching.zip
+          serverless/api-gateway-policy-caching/beta/1614220541423-2021-02-25T02:35:41.423Z/api-gateway-policy-caching.zip
       Handler: dist/handlers/health-handler/index.handler
       Runtime: nodejs12.x
       FunctionName: api-gateway-policy-caching-beta-health
@@ -90,7 +90,7 @@ Resources:
       Code:
         S3Bucket: !Ref ServerlessDeploymentBucket
         S3Key: >-
-          serverless/api-gateway-policy-caching/beta/1613966051209-2021-02-22T03:54:11.209Z/api-gateway-policy-caching.zip
+          serverless/api-gateway-policy-caching/beta/1614220541423-2021-02-25T02:35:41.423Z/api-gateway-policy-caching.zip
       Handler: dist/handlers/magic-handler/index.handler
       Runtime: nodejs12.x
       FunctionName: api-gateway-policy-caching-beta-magic-token
@@ -103,27 +103,27 @@ Resources:
       Role: "arn:aws:iam::654918520080:role/APIG-LAMBDA-DDB"
     DependsOn:
       - MagicDashtokenLogGroup
-  AuthorizerLambdaVersionLB8ij2TRhSdbSReltqNezJ8eYTLzWGAzmRkRRvE4:
+  AuthorizerLambdaVersiongdIpDW3QYe7PZwn571LFf5wTJXOEW4mw3KVlDijI:
     Type: "AWS::Lambda::Version"
     DeletionPolicy: Retain
     Properties:
       FunctionName: !Ref AuthorizerLambdaFunction
-      CodeSha256: JgoD+WcFru+rlADfluJQONHc5l7G3OkJ4gt7ROEpCmw=
+      CodeSha256: dXA8tgy9dg5q2dp5yVDC2PH/663s+ORBGUMeYzoShbw=
       Description: Lambda that checks token passed in Authorization header
-  HealthLambdaVersionxO2wGS3M6yQBJ4avMwGf8N3gEOTxuHZY54OZYAL7N8:
-    Type: "AWS::Lambda::Version"
-    DeletionPolicy: Retain
-    Properties:
-      FunctionName: !Ref HealthLambdaFunction
-      CodeSha256: JgoD+WcFru+rlADfluJQONHc5l7G3OkJ4gt7ROEpCmw=
-      Description: Gateway health check. Responds with current time and a short message.
-  MagicDashtokenLambdaVersione0n7xFGERY4Ybp7rUdixIgabyqz3oFGigsLVa6JK3Ns:
+  MagicDashtokenLambdaVersionhRb8xIEGiDD2hwmyQNMp092QxLpVkjhOsi80yBBMc:
     Type: "AWS::Lambda::Version"
     DeletionPolicy: Retain
     Properties:
       FunctionName: !Ref MagicDashtokenLambdaFunction
-      CodeSha256: JgoD+WcFru+rlADfluJQONHc5l7G3OkJ4gt7ROEpCmw=
+      CodeSha256: dXA8tgy9dg5q2dp5yVDC2PH/663s+ORBGUMeYzoShbw=
       Description: Retrieve user with OAuth token. Responds with health information.
+  HealthLambdaVersionrxUh6y18GqWoFcD72oWJtJj8TmUN7nMO738nA4:
+    Type: "AWS::Lambda::Version"
+    DeletionPolicy: Retain
+    Properties:
+      FunctionName: !Ref HealthLambdaFunction
+      CodeSha256: dXA8tgy9dg5q2dp5yVDC2PH/663s+ORBGUMeYzoShbw=
+      Description: Gateway health check. Responds with current time and a short message.
   ApiGatewayRestApi:
     Type: "AWS::ApiGateway::RestApi"
     Properties:
@@ -147,6 +147,78 @@ Resources:
         - ApiGatewayRestApi
         - RootResourceId
       PathPart: magic-token
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodHealthOptions:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: "200"
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: "{statusCode:200}"
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: "200"
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Headers: >-
+                'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET'"
+            ResponseTemplates:
+              application/json: >-
+                #set($origin = $input.params("Origin"))
+
+                #if($origin == "") #set($origin = $input.params("origin")) #end
+
+                #if($origin.matches(".+"))
+                #set($context.responseOverride.header.Access-Control-Allow-Origin
+                = $origin) #end
+      ResourceId: !Ref ApiGatewayResourceHealth
+      RestApiId: !Ref ApiGatewayRestApi
+  ApiGatewayMethodMagicDashtokenOptions:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      MethodResponses:
+        - StatusCode: "200"
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+          ResponseModels: {}
+      RequestParameters: {}
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: "{statusCode:200}"
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationResponses:
+          - StatusCode: "200"
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Headers: >-
+                'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
+            ResponseTemplates:
+              application/json: >-
+                #set($origin = $input.params("Origin"))
+
+                #if($origin == "") #set($origin = $input.params("origin")) #end
+
+                #if($origin.matches(".+"))
+                #set($context.responseOverride.header.Access-Control-Allow-Origin
+                = $origin) #end
+      ResourceId: !Ref ApiGatewayResourceMagicDashtoken
       RestApiId: !Ref ApiGatewayRestApi
   ApiGatewayMethodHealthGet:
     Type: "AWS::ApiGateway::Method"
@@ -172,10 +244,10 @@ Resources:
               - Arn
             - /invocations
       MethodResponses: []
-  ApiGatewayMethodMagicDashtokenGet:
+  ApiGatewayMethodMagicDashtokenPost:
     Type: "AWS::ApiGateway::Method"
     Properties:
-      HttpMethod: GET
+      HttpMethod: POST
       RequestParameters: {}
       ResourceId: !Ref ApiGatewayResourceMagicDashtoken
       RestApiId: !Ref ApiGatewayRestApi
@@ -217,17 +289,19 @@ Resources:
             - Arn
           - /invocations
       Type: REQUEST
-  ApiGatewayDeployment1613966041494:
+  ApiGatewayDeployment1614220531473:
     Type: "AWS::ApiGateway::Deployment"
     Properties:
       RestApiId: !Ref ApiGatewayRestApi
       StageName: beta
     DependsOn:
+      - ApiGatewayMethodHealthOptions
+      - ApiGatewayMethodMagicDashtokenOptions
       - ApiGatewayMethodHealthGet
-      - ApiGatewayMethodMagicDashtokenGet
+      - ApiGatewayMethodMagicDashtokenPost
   ApiGatewayUsagePlan:
     Type: "AWS::ApiGateway::UsagePlan"
-    DependsOn: ApiGatewayDeployment1613966041494
+    DependsOn: ApiGatewayDeployment1614220531473
     Properties:
       ApiStages:
         - ApiId: !Ref ApiGatewayRestApi
@@ -303,13 +377,13 @@ Outputs:
     Value: !Ref ServerlessDeploymentBucket
   AuthorizerLambdaFunctionQualifiedArn:
     Description: Current Lambda function version
-    Value: !Ref AuthorizerLambdaVersionLB8ij2TRhSdbSReltqNezJ8eYTLzWGAzmRkRRvE4
-  HealthLambdaFunctionQualifiedArn:
-    Description: Current Lambda function version
-    Value: !Ref HealthLambdaVersionxO2wGS3M6yQBJ4avMwGf8N3gEOTxuHZY54OZYAL7N8
+    Value: !Ref AuthorizerLambdaVersiongdIpDW3QYe7PZwn571LFf5wTJXOEW4mw3KVlDijI
   MagicDashtokenLambdaFunctionQualifiedArn:
     Description: Current Lambda function version
-    Value: !Ref MagicDashtokenLambdaVersione0n7xFGERY4Ybp7rUdixIgabyqz3oFGigsLVa6JK3Ns
+    Value: !Ref MagicDashtokenLambdaVersionhRb8xIEGiDD2hwmyQNMp092QxLpVkjhOsi80yBBMc
+  HealthLambdaFunctionQualifiedArn:
+    Description: Current Lambda function version
+    Value: !Ref HealthLambdaVersionrxUh6y18GqWoFcD72oWJtJj8TmUN7nMO738nA4
   ServiceEndpoint:
     Description: URL of the service endpoint
     Value: !Join

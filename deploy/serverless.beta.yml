@@ -31,13 +31,15 @@ functions:
       - http:
           path: /health
           method: get
+          cors: true
   magic-token:
     handler: dist/handlers/magic-handler/index.handler
     description: Retrieve user with OAuth token. Responds with health information.
     events:
       - http:
           path: /magic-token
-          method: get
+          method: post
+          cors: true
           authorizer:
             name: authorizer
             resultTtlInSeconds: 3600
